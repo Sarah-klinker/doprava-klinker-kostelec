@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulačka ceny dopravy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Kalkulačka ceny dopravy</h1>
+      <p class="subtitle">Porovnání Raben · DNP · Vnitro (Kostelec nad Orlicí)</p>
+    </header>
+
+    <section class="input-panel">
+      <div class="field">
+        <label for="psc">PSČ doručení</label>
+        <input type="text" id="psc" placeholder="např. 51741" maxlength="6" inputmode="numeric" autocomplete="postal-code">
+      </div>
+      <div class="field">
+        <label for="weight">Hmotnost (kg)</label>
+        <input type="number" id="weight" placeholder="např. 150" min="1" step="1">
+      </div>
+      <button type="button" id="calc-btn">Spočítat ceny</button>
+    </section>
+
+    <section id="info-panel" class="info-panel hidden">
+      <div class="info-grid">
+        <div><span class="label">PSČ</span><span id="info-psc">—</span></div>
+        <div><span class="label">Město</span><span id="info-city">—</span></div>
+        <div><span class="label">Pásmo (Vnitro)</span><span id="info-pasmo">—</span></div>
+      </div>
+    </section>
+
+    <section id="results" class="results hidden">
+      <h2>Výsledky</h2>
+      <div id="results-grid" class="results-grid"></div>
+      <p id="best-note" class="best-note hidden"></p>
+    </section>
+
+    <section id="error" class="error hidden"></section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
