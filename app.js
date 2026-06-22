@@ -1,6 +1,11 @@
 /** @typedef {{ psc_od: number, psc_do: number, zone: number, city?: string }} ZonyEntry */
 /** @typedef {{ psc_od: number, psc_do: number, zone: number, okres?: string }} PscRange */
 
+const CARRIER_WEIGHT_LIMITS_KG = {
+  Raben: 5000,
+  "Doprava na paletách": 3500,
+};
+
 let shippingData = null;
 
 async function loadData() {
@@ -85,7 +90,23 @@ function normalizePsc(raw) {
   return parseInt(digits.padStart(5, "0"), 10);
 }
 
+function overWeightLimit(carrier, weight) {
+  const limit = CARRIER_WEIGHT_LIMITS_KG[carrier];
+  if (limit != null && weight > limit) {
+    return {
+      available: false,
+      reason: `Max. tonáž ${limit.toLocaleString("cs-CZ")} kg`,
+    };
+  }
+  return null;
+}
+
 function calculateRaben(psc, weight) {
+  const overLimit = overWeightLimit("Raben", weight);
+  if (overLimit) {
+    return overLimit;
+  }
+
   const { psc_ranges, weights, prices } = shippingData.raben;
   const zone = lookupPscZone(psc, psc_ranges);
   if (zone == null) {
@@ -112,6 +133,11 @@ function calculateRaben(psc, weight) {
 }
 
 function calculateDnp(psc, weight) {
+  const overLimit = overWeightLimit("Doprava na paletách", weight);
+  if (overLimit) {
+    return overLimit;
+  }
+
   const { psc_ranges, weights, prices } = shippingData.dnp;
   const range = psc_ranges.find((r) => psc >= r.psc_od && psc <= r.psc_do);
   if (!range) {
@@ -276,7 +302,7 @@ function calculate() {
 
   const results = [
     { carrier: "Raben", ...calculateRaben(psc, weight) },
-    { carrier: "DNP", ...calculateDnp(psc, weight) },
+    { carrier: "Doprava na paletách", ...calculateDnp(psc, weight) },
     { carrier: "Vnitro", ...calculateVnitro(zonyEntry.zone, weight) },
   ];
 

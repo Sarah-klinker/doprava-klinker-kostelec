@@ -28,8 +28,8 @@ Otevřete `http://localhost:8080`
 
 | Dopravce | Zóna | Cena |
 |----------|------|------|
-| **Raben** | Vlastní mapování PSČ → zóny 1–3 | Tarif podle hmotnostního pásma (kg) |
-| **DNP** | Vlastní mapování PSČ → zóny 1–12 | Tarif podle hmotnostního pásma (kg) |
+| **Raben** | Vlastní mapování PSČ → zóny 1–3 | Tarif podle hmotnostního pásma (max. **5 000 kg**) |
+| **Doprava na paletách** | Vlastní mapování PSČ → zóny 1–12 | Tarif podle hmotnostního pásma (max. **3 500 kg**) |
 | **Vnitro** | Pásmo ze listu ZONY | Sloupce „limit - cena do CN“ a „Minimum“ |
 
 Ceny jsou v **Kč bez DPH**. Nejlevnější doprava je zvýrazněna zeleně.
