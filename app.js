@@ -2,8 +2,8 @@
 /** @typedef {{ psc_od: number, psc_do: number, zone: number, okres?: string }} PscRange */
 
 const CARRIER_WEIGHT_LIMITS_KG = {
-  Raben: 5000,
-  "Doprava na paletách": 3500,
+  Raben: 3000,
+  "Doprava na paletách": 2500,
 };
 
 let shippingData = null;
