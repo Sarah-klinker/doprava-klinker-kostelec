@@ -9,7 +9,7 @@ from pathlib import Path
 import openpyxl
 
 APP_DIR = Path(__file__).resolve().parent
-DEFAULT_XLSX = Path(r"e:\AI\vnitro dopravy\Vnitro_Kostelec.xlsx")
+DEFAULT_XLSX = Path(r"e:\AI\vnitro dopravy\Kostelec\Vnitro_Kostelec.xlsx")
 DEFAULT_OUT = APP_DIR / "data" / "shipping.json"
 
 

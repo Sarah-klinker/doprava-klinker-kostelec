@@ -16,7 +16,7 @@ Na svém počítači (jednorázově před prvním nahráním a při každé aktu
 
 ```powershell
 cd "c:\Users\skocourkova\Documents\Marketing\AI\vibe coding_1\doprava-kalkulacka"
-py -3 build_data.py "e:\AI\vnitro dopravy\Vnitro_Kostelec.xlsx"
+py -3 build_data.py "e:\AI\vnitro dopravy\Kostelec\Vnitro_Kostelec.xlsx"
 ```
 
 Tím se přegeneruje soubor `data/shipping.json`.
@@ -95,7 +95,7 @@ Tento odkaz pošlete kolegům.
 
 ```powershell
 cd "c:\Users\skocourkova\Documents\Marketing\AI\vibe coding_1\doprava-kalkulacka"
-py -3 build_data.py "e:\AI\vnitro dopravy\Vnitro_Kostelec.xlsx"
+py -3 build_data.py "e:\AI\vnitro dopravy\Kostelec\Vnitro_Kostelec.xlsx"
 
 git add data/shipping.json
 git commit -m "Aktualizovat ceníky dopravy"
