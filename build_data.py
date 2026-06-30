@@ -142,8 +142,6 @@ def parse_vnitro(wb: openpyxl.Workbook) -> dict:
     ws = wb["Vnitro_Kostelec"]
 
     weight_limits = [2000, 3000, 6000, 8000, 12000, 999999]
-    limit_cols = [7, 12, 17, 22, 27, 32]
-    minimum_cols = [6, 11, 16, 21, 26, 31]
 
     prices: dict[str, dict] = {}
     for r in range(6, ws.max_row + 1):
@@ -153,13 +151,25 @@ def parse_vnitro(wb: openpyxl.Workbook) -> dict:
         pasmo_key = str(int(pasmo))
         km_range = ws.cell(r, 2).value
         prices[pasmo_key] = {"km_range": str(km_range) if km_range else ""}
-        for limit, limit_col, min_col in zip(weight_limits, limit_cols, minimum_cols):
+        for i, limit in enumerate(weight_limits):
+            carrier_cols = [3 + i * 5, 4 + i * 5, 5 + i * 5]
+            limit_col = 7 + i * 5
+            min_col = 6 + i * 5
             limit_key = "999999" if limit == 999999 else str(limit)
             limit_val = ws.cell(r, limit_col).value
-            min_val = ws.cell(r, min_col).value
+
+            carrier_vals = [
+                float(ws.cell(r, c).value)
+                for c in carrier_cols
+                if isinstance(ws.cell(r, c).value, (int, float))
+            ]
+            min_val = min(carrier_vals) if carrier_vals else None
+            if min_val is None and isinstance(ws.cell(r, min_col).value, (int, float)):
+                min_val = float(ws.cell(r, min_col).value)
+
             prices[pasmo_key][limit_key] = {
                 "limit": float(limit_val) if isinstance(limit_val, (int, float)) else None,
-                "minimum": float(min_val) if isinstance(min_val, (int, float)) else None,
+                "minimum": min_val,
             }
 
     return {"weight_limits": weight_limits[:-1] + [999999], "prices": prices}
