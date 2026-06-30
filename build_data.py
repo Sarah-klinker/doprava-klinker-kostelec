@@ -40,11 +40,19 @@ def parse_zony(wb: openpyxl.Workbook) -> list[dict]:
 def parse_raben(wb: openpyxl.Workbook) -> dict:
     ws = wb["Raben_Kostelec"]
 
+    fuel = ws.cell(20, 11).value
+    customer = ws.cell(21, 11).value
+    multiplier = (1 + (float(fuel) if isinstance(fuel, (int, float)) else 0)) * (
+        1 + (float(customer) if isinstance(customer, (int, float)) else 0)
+    )
+
     weights: list[int] = []
     prices: dict[str, dict[str, float | None]] = {"1": {}, "2": {}, "3": {}}
     zone_cols = {1: 4, 2: 5, 3: 6}
+    weight_row_start = 14
+    base_row_start = 59
 
-    for r in range(14, ws.max_row + 1):
+    for r in range(weight_row_start, ws.max_row + 1):
         w = ws.cell(r, 2).value
         if isinstance(w, str):
             break
@@ -53,9 +61,14 @@ def parse_raben(wb: openpyxl.Workbook) -> dict:
         weight = int(w)
         if weight in weights:
             continue
+        base_row = base_row_start + (r - weight_row_start)
         row_prices: dict[str, float | None] = {}
         for zone_num, col in zone_cols.items():
             val = ws.cell(r, col).value
+            if not isinstance(val, (int, float)):
+                base_val = ws.cell(base_row, col).value
+                if isinstance(base_val, (int, float)):
+                    val = float(base_val) * multiplier
             row_prices[str(zone_num)] = float(val) if isinstance(val, (int, float)) else None
         if any(v is not None for v in row_prices.values()):
             weights.append(weight)
