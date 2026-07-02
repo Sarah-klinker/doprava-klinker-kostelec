@@ -6,6 +6,8 @@ const CARRIER_WEIGHT_LIMITS_KG = {
   "Doprava na paletách": 2500,
 };
 
+const DNP_NESTOHOVAT_SURCHARGE = 0.1;
+
 let shippingData = null;
 
 async function loadData() {
@@ -132,7 +134,7 @@ function calculateRaben(psc, weight) {
   };
 }
 
-function calculateDnp(psc, weight) {
+function calculateDnp(psc, weight, nestohovat) {
   const overLimit = overWeightLimit("Doprava na paletách", weight);
   if (overLimit) {
     return overLimit;
@@ -150,18 +152,25 @@ function calculateDnp(psc, weight) {
     return { available: false, reason: "Hmotnost mimo rozsah DNP" };
   }
 
-  const price = prices[String(zone)]?.[String(tier)];
-  if (price == null) {
+  const basePrice = prices[String(zone)]?.[String(tier)];
+  if (basePrice == null) {
     return { available: false, reason: "Cena není k dispozici" };
   }
 
   const okres = range.okres ? ` · ${range.okres}` : "";
+  const price = nestohovat
+    ? Math.round(basePrice * (1 + DNP_NESTOHOVAT_SURCHARGE))
+    : basePrice;
+  const detail =
+    `Zóna ${zone}${okres} · tarif do ${tier} kg` +
+    (nestohovat ? " · nestohovat +10 %" : "");
+
   return {
     available: true,
     price,
     zone,
     tier,
-    detail: `Zóna ${zone}${okres} · tarif do ${tier} kg`,
+    detail,
   };
 }
 
@@ -300,9 +309,11 @@ function calculate() {
   document.getElementById("info-pasmo").textContent = String(zonyEntry.zone);
   document.getElementById("info-panel").classList.remove("hidden");
 
+  const nestohovat = document.getElementById("nestohovat").checked;
+
   const results = [
     { carrier: "Raben", ...calculateRaben(psc, weight) },
-    { carrier: "Doprava na paletách", ...calculateDnp(psc, weight) },
+    { carrier: "Doprava na paletách", ...calculateDnp(psc, weight, nestohovat) },
     { carrier: "Vnitro", ...calculateVnitro(zonyEntry.zone, weight) },
   ];
 

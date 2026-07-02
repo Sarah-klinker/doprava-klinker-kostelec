@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
 import openpyxl
+from openpyxl.utils import column_index_from_string
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_XLSX = Path(r"e:\AI\vnitro dopravy\Kostelec\Vnitro_Kostelec.xlsx")
@@ -95,33 +97,68 @@ def parse_raben(wb: openpyxl.Workbook) -> dict:
     return {"psc_ranges": psc_ranges, "weights": weights, "prices": prices}
 
 
-def parse_dnp(wb: openpyxl.Workbook) -> dict:
-    ws = wb["DNP_Kostelec"]
+DNP_ZONE_ROW_START = 3
+DNP_ZONE_ROW_END = 14
+DNP_WEIGHT_ROW = 2
+DNP_SURCHARGE_CELL = (19, 9)
+DNP_ROUND_FORMULA = re.compile(
+    r"^=ROUND\(([A-Z]+)(\d+)\*\(1\+\$I\$19\),0\)$",
+    re.IGNORECASE,
+)
+
+
+def _read_dnp_top_cell(ws_values, ws_formulas, row: int, col: int) -> float | None:
+    """Horní tabulka DNP (řádky 3–14): cena s příplatkem z buňky nebo z jejího vzorce."""
+    cached = ws_values.cell(row, col).value
+    if isinstance(cached, (int, float)):
+        return float(cached)
+
+    formula = ws_formulas.cell(row, col).value
+    if not isinstance(formula, str):
+        return None
+
+    match = DNP_ROUND_FORMULA.match(formula.strip())
+    if not match:
+        return None
+
+    ref_col = column_index_from_string(match.group(1))
+    ref_row = int(match.group(2))
+    base = ws_values.cell(ref_row, ref_col).value
+    if not isinstance(base, (int, float)):
+        return None
+
+    surcharge = ws_values.cell(*DNP_SURCHARGE_CELL).value
+    multiplier = 1 + (float(surcharge) if isinstance(surcharge, (int, float)) else 0)
+    return float(round(base * multiplier))
+
+
+def parse_dnp(wb_values: openpyxl.Workbook, wb_formulas: openpyxl.Workbook) -> dict:
+    ws_values = wb_values["DNP_Kostelec"]
+    ws_formulas = wb_formulas["DNP_Kostelec"]
 
     weights: list[int] = []
-    for c in range(2, ws.max_column + 1):
-        w = ws.cell(2, c).value
+    for c in range(2, ws_values.max_column + 1):
+        w = ws_values.cell(DNP_WEIGHT_ROW, c).value
         if isinstance(w, (int, float)):
             weights.append(int(w))
 
     prices: dict[str, dict[str, float | None]] = {}
-    for r in range(3, ws.max_row + 1):
-        zone = ws.cell(r, 1).value
-        if not isinstance(zone, (int, float)) or zone > 100:
-            break
+    for r in range(DNP_ZONE_ROW_START, DNP_ZONE_ROW_END + 1):
+        zone = ws_values.cell(r, 1).value
+        if not isinstance(zone, (int, float)):
+            continue
         zone_key = str(int(zone))
         prices[zone_key] = {}
         for c, w in enumerate(weights, start=2):
-            val = ws.cell(r, c).value
-            prices[zone_key][str(w)] = float(val) if isinstance(val, (int, float)) else None
+            prices[zone_key][str(w)] = _read_dnp_top_cell(ws_values, ws_formulas, r, c)
 
     psc_ranges: list[dict] = []
-    for r in range(18, ws.max_row + 1):
-        psc_od = ws.cell(r, 1).value
+    for r in range(18, ws_values.max_row + 1):
+        psc_od = ws_values.cell(r, 1).value
         if isinstance(psc_od, str) and "počítat" in psc_od.lower():
             break
-        psc_do = ws.cell(r, 2).value
-        zone = ws.cell(r, 5).value
+        psc_do = ws_values.cell(r, 2).value
+        zone = ws_values.cell(r, 5).value
         if not isinstance(psc_od, (int, float)) or not isinstance(psc_do, (int, float)):
             continue
         if not isinstance(zone, (int, float)):
@@ -131,7 +168,7 @@ def parse_dnp(wb: openpyxl.Workbook) -> dict:
                 "psc_od": int(psc_od),
                 "psc_do": int(psc_do),
                 "zone": int(zone),
-                "okres": str(ws.cell(r, 4).value or ""),
+                "okres": str(ws_values.cell(r, 4).value or ""),
             }
         )
 
@@ -177,6 +214,7 @@ def parse_vnitro(wb: openpyxl.Workbook) -> dict:
 
 def build_data(xlsx_path: Path) -> dict:
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+    wb_formulas = openpyxl.load_workbook(xlsx_path, data_only=False)
     return {
         "meta": {
             "source": xlsx_path.name,
@@ -184,7 +222,7 @@ def build_data(xlsx_path: Path) -> dict:
         },
         "zony": parse_zony(wb),
         "raben": parse_raben(wb),
-        "dnp": parse_dnp(wb),
+        "dnp": parse_dnp(wb, wb_formulas),
         "vnitro": parse_vnitro(wb),
     }
 
